@@ -10,8 +10,25 @@ export type RtlFrequency = {
     url: string;
 }
 
+export type RtlBinData = {
+    hz: number;
+    db: number;
+}
+
+export type RtlDataRow = {
+    timestamp: Date;
+    bins: RtlBinData[];
+}
+
+export type RtlStats = {
+    freqRange: [number, number];
+    timeRange: [Date, Date];
+    dbRange: [number, number];
+}
+
 export type RtlData = {
-    data: string[][];
+    stats: RtlStats;
+    data: RtlDataRow[];
     frequencies: RtlFrequency[];
 }
 
@@ -20,12 +37,8 @@ const getData = async (): Promise<RtlData> => {
     return response.data;
 };
 
-const useData = () => useQuery({
+export const useData = () => useQuery({
     queryKey: ['rtl'],
     queryFn: getData,
     // refetchInterval: 1000,
 });
-
-export {
-    useData,
-}
