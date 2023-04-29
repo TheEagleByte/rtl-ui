@@ -11,12 +11,12 @@ export type RtlFrequency = {
 }
 
 export type RtlBinData = {
-    hz: number;
-    db: number;
+    bin: number;
+    count: number;
 }
 
 export type RtlDataRow = {
-    timestamp: Date;
+    bin: Date;
     bins: RtlBinData[];
 }
 

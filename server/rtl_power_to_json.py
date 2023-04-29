@@ -96,12 +96,12 @@ def rtl_power_to_json(rtl_power_output):
         for j in range(0, len(d)):
             if d[j]["hz"] != parsedData[0][0]["hz"]:
                 dataOut[i]["bins"].append({
-                    "hz": d[j]["hz"],
-                    "db": d[j]["db"]
+                    "bin": d[j]["hz"],
+                    "count": d[j]["db"]
                 })
             else:
                 dataOut.append({
-                    "timestamp": d[j]["timestamp"],
+                    "bin": d[j]["timestamp"],
                     "bins": []
                 })
                 i += 1

@@ -1,8 +1,9 @@
 import { Group } from '@visx/group';
-import { scaleLinear, scaleTime } from '@visx/scale';
+import { scaleLinear, scaleTime, scaleOrdinal } from '@visx/scale';
 import { Axis, Orientation, SharedAxisProps, AxisScale } from '@visx/axis';
 import { HeatmapRect } from '@visx/heatmap';
 import { RtlBinData, RtlData, RtlDataRow } from '@/query/rtl';
+import { interpolateTurbo } from 'd3-scale-chromatic';
 
 const hot1 = '#77312f';
 const hot2 = '#f33d15';
@@ -29,6 +30,17 @@ export type HeatmapProps = {
 
 const margin = { top: 10, left: 20, right: 20, bottom: 110 };
 
+const bins = (d: RtlDataRow) => d.bins;
+const count = (d: RtlBinData) => d.count;
+
+function max<Datum>(data: Datum[], value: (d: Datum) => number): number {
+    return Math.max(...data.map(value));
+}
+
+function min<Datum>(data: Datum[], value: (d: Datum) => number): number {
+    return Math.min(...data.map(value));
+}
+
 function RtlHeatmap({
     data,
     width,
@@ -40,7 +52,8 @@ function RtlHeatmap({
         stats
     } = data;
 
-    const bucketSizeMax = rows.length;
+    const colorMax = max(rows, (d) => max(bins(d), count));
+    const bucketSizeMax = max(rows, (d) => bins(d).length);
 
     // bounds
     const size =
@@ -50,20 +63,21 @@ function RtlHeatmap({
 
     // scales
     const xScale = scaleLinear<number>({
-        domain: stats.freqRange,
-        range: [0, xMax],
+        domain: [0, rows.length]
     });
     const yScale = scaleTime<number>({
-        domain: stats.timeRange,
-        range: [yMax, 0],
+        domain: [0, bucketSizeMax]
     });
-    const rectColorScale = scaleLinear<string>({
-        range: [hot1, hot2],
-        domain: stats.dbRange,
+    const colorScale = scaleLinear<number>({
+        range: [0, 1],
+        domain: [0, colorMax]
     });
 
-    const binWidth = xMax / bucketSizeMax;
+    const binWidth = xMax / rows.length;
     const binHeight = yMax / bucketSizeMax;
+
+    xScale.range([0, xMax]);
+    yScale.range([yMax, 0]);
 
     return width < 10 ? null : (
         <svg width={width} height={height}>
@@ -71,33 +85,31 @@ function RtlHeatmap({
             <Group top={margin.top} left={margin.left}>
                 <HeatmapRect
                     data={rows}
-                    xScale={xScale}
-                    yScale={yScale}
-                    colorScale={rectColorScale}
+                    xScale={(d) => xScale(d) ?? 0}
+                    yScale={(d) => yScale(d) ?? 0}
                     binWidth={binWidth}
                     binHeight={binHeight}
                     gap={0}
-                    count={(d: RtlBinData) => d.db}
                 >
-                    {(heatmap) => {
-                        return heatmap.map((heatmapBins) =>
-                        heatmapBins.map((bin) => (
-                            <rect
-                                key={`heatmap-rect-${bin.row}-${bin.column}`}
-                                className="visx-heatmap-rect"
-                                width={bin.width}
-                                height={bin.height}
-                                x={bin.x}
-                                y={bin.y}
-                                fill={bin.color}
-                                onClick={() => {
-                                    const { row, column } = bin;
-                                    alert(JSON.stringify({ row, column, bin: bin.bin }));
-                                }}
-                            />
-                        )),
-                    )
-                    }
+                    {(heatmap) =>
+                        heatmap.map((heatmapBins) =>
+                            heatmapBins.map((bin) => (
+                                <rect
+                                    key={`heatmap-rect-${bin.row}-${bin.column}`}
+                                    className="visx-heatmap-rect"
+                                    width={bin.width}
+                                    height={bin.height}
+                                    x={bin.x}
+                                    y={bin.y}
+                                    fill={interpolateTurbo(colorScale(bin.count!)) ?? '#000'}
+                                    fillOpacity={bin.opacity}
+                                    onClick={() => {
+                                        const { row, column } = bin;
+                                        alert(JSON.stringify({ row, column, bin: bin.bin }));
+                                    }}
+                                />
+                            ))
+                        )
                     }
                 </HeatmapRect>
             </Group>
