@@ -1,16 +1,14 @@
 import { Group } from '@visx/group';
-import { scaleLinear, scaleTime, scaleOrdinal } from '@visx/scale';
-import { Axis, Orientation, SharedAxisProps, AxisScale } from '@visx/axis';
+import { scaleLinear, scaleTime } from '@visx/scale';
+import { AxisTop, AxisLeft, } from '@visx/axis';
+import { format } from 'd3-format';
+import { timeFormat } from 'd3-time-format';
+import { interpolateViridis } from 'd3-scale-chromatic';
 import { HeatmapRect } from '@visx/heatmap';
-import { RtlBinData, RtlData, RtlDataRow } from '@/query/rtl';
-import { interpolateTurbo } from 'd3-scale-chromatic';
+import { RtlData, RtlDataRow } from '@/query/rtl';
+import { Typography } from '@mui/material';
 
-const hot1 = '#77312f';
-const hot2 = '#f33d15';
-const cool1 = '#122549';
-const cool2 = '#b4fbde';
 const background = '#28272c';
-const axisColor = '#fff';
 const tickLabelColor = '#fff';
 
 const tickLabelProps = {
@@ -28,10 +26,9 @@ export type HeatmapProps = {
     events?: boolean;
 };
 
-const margin = { top: 10, left: 20, right: 20, bottom: 110 };
+const margin = { top: 60, left: 100, right: 35, bottom: 20 };
 
 const bins = (d: RtlDataRow) => d.bins;
-const count = (d: RtlBinData) => d.count;
 
 function max<Datum>(data: Datum[], value: (d: Datum) => number): number {
     return Math.max(...data.map(value));
@@ -40,6 +37,9 @@ function max<Datum>(data: Datum[], value: (d: Datum) => number): number {
 function min<Datum>(data: Datum[], value: (d: Datum) => number): number {
     return Math.min(...data.map(value));
 }
+
+const formatTime = (value: any) => timeFormat("%I:%M %p")(new Date(value));
+const formatFrequency = (value: any) => format(".3s")(value) + "Hz";
 
 function RtlHeatmap({
     data,
@@ -52,69 +52,102 @@ function RtlHeatmap({
         stats
     } = data;
 
-    const colorMax = max(rows, (d) => max(bins(d), count));
-    const bucketSizeMax = max(rows, (d) => bins(d).length);
-
     // bounds
-    const size =
-        width > margin.left + margin.right ? width - margin.left - margin.right : width;
-    const xMax = size;
+    const xMax = width - margin.left - margin.right;
     const yMax = height - margin.bottom - margin.top;
 
     // scales
-    const xScale = scaleLinear<number>({
-        domain: [0, rows.length]
+    const xScale = scaleLinear({
+        domain: stats.freqRange,
+        range: [0, xMax]
     });
-    const yScale = scaleTime<number>({
-        domain: [0, bucketSizeMax]
+    const yScale = scaleTime({
+        domain: [new Date(stats.timeRange[0]), new Date(stats.timeRange[1])],
+        range: [yMax, 0],
+        reverse: true
     });
-    const colorScale = scaleLinear<number>({
+    const colorScale = scaleLinear({
         range: [0, 1],
-        domain: [0, colorMax]
+        domain: stats.dbRange
     });
 
-    const binWidth = xMax / rows.length;
-    const binHeight = yMax / bucketSizeMax;
-
-    xScale.range([0, xMax]);
-    yScale.range([yMax, 0]);
-
-    return width < 10 ? null : (
+    if (width < 10) return <Typography variant="h6">Too small</Typography>;
+    return (
         <svg width={width} height={height}>
             <rect x={0} y={0} width={width} height={height} rx={14} fill={background} />
             <Group top={margin.top} left={margin.left}>
                 <HeatmapRect
                     data={rows}
-                    xScale={(d) => xScale(d) ?? 0}
-                    yScale={(d) => yScale(d) ?? 0}
-                    binWidth={binWidth}
-                    binHeight={binHeight}
+                    xScale={xScale}
+                    yScale={yScale}
                     gap={0}
                 >
-                    {(heatmap) =>
-                        heatmap.map((heatmapBins) =>
-                            heatmapBins.map((bin) => (
+                    {(heatmap) => heatmap.map((heatmapBins, heatIndex) => {
+                        return heatmapBins.map((bin, binIndex) => {
+                            const x = xScale(rows[heatIndex].bins[binIndex].bin);
+                            const y = yScale(new Date(rows[heatIndex].bin));
+                            const h = (heatIndex != rows.length - 1 && binIndex < rows[heatIndex + 1].bins.length)
+                                ? yScale(new Date(rows[heatIndex + 1].bin)) - yScale(new Date(rows[heatIndex].bin))
+                                : yScale(new Date(rows[heatIndex].bin)) - yScale(new Date(rows[heatIndex - 1].bin));
+                            const w = xScale(rows[heatIndex].bins[binIndex].bin + stats.freqStep) - xScale(rows[heatIndex].bins[binIndex].bin);
+
+                            return (
                                 <rect
                                     key={`heatmap-rect-${bin.row}-${bin.column}`}
-                                    className="visx-heatmap-rect"
-                                    width={bin.width}
-                                    height={bin.height}
-                                    x={bin.x}
-                                    y={bin.y}
-                                    fill={interpolateTurbo(colorScale(bin.count!)) ?? '#000'}
+                                    width={w}
+                                    height={h}
+                                    x={x}
+                                    y={y}
+                                    fill={interpolateViridis(colorScale(bin.count!)) ?? '#000'}
                                     fillOpacity={bin.opacity}
-                                    onClick={() => {
-                                        const { row, column } = bin;
-                                        alert(JSON.stringify({ row, column, bin: bin.bin }));
-                                    }}
                                 />
-                            ))
-                        )
-                    }
+                            )
+                        })
+                    })}
                 </HeatmapRect>
+                <AxisLeft
+                    scale={yScale}
+                    tickFormat={formatTime}
+                    label="Time"
+                    labelProps={{
+                        fill: "#fff",
+                        fontSize: 12,
+                        textAnchor: 'middle'
+                    }}
+                    labelOffset={70}
+                    tickStroke={"#fff"}
+                    tickLabelProps={{
+                        fill: "#fff",
+                        fontSize: 12,
+                        textAnchor: 'end'
+                    }}
+                    stroke="#fff"
+                />
+                <AxisTop
+                    scale={xScale}
+                    top={0}
+                    left={0}
+                    label="Frequency"
+                    labelProps={{
+                        fill: "#fff",
+                        fontSize: 12,
+                        textAnchor: 'middle'
+                    }}
+                    labelOffset={20}
+                    tickFormat={formatFrequency}
+                    tickStroke={"#fff"}
+                    numTicks={16}
+                    tickLabelProps={{
+                        fill: "#fff",
+                        fontSize: 12,
+                        textAnchor: 'middle'
+                    }}
+                    stroke="#fff"
+                />
             </Group>
         </svg>
     );
 }
 
 export default RtlHeatmap;
+

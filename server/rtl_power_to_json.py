@@ -1,18 +1,18 @@
 import json, datetime
 
-# Converts the date and time into a datetime object
+# Converts the date and time into a unix millisecond timestamp
 # Example date: "2016-10-08"
 # Example time: "10:01:03"
 def parse_date_time(date, time):
     date = date.split('-')
     time = time.split(':')
-    return datetime.datetime(
-        int(date[0]),   # Year 
-        int(date[1]),   # Month
-        int(date[2]),   # Day
-        int(time[0]),   # Hour
-        int(time[1]),   # Minute
-        int(time[2]))   # Second
+    dt = datetime.datetime(
+        int(date[0]), int(date[1]), int(date[2]),
+        int(time[0]), int(time[1]), int(time[2])
+    )
+
+    # as milliseconds unix
+    return int(dt.timestamp() * 1000)
 
 # The input file is generated using the Signal Identification Guide (sigidwiki.com)
 def rtl_power_to_json(rtl_power_output):
@@ -25,8 +25,7 @@ def rtl_power_to_json(rtl_power_output):
     endTime = None
     lowestDb = 0
     highestDb = 0
-    lowestDb = 0
-    highestDb = 0
+    freqStep = 0
     
     with open(rtl_power_output, 'r') as f:
         for rawLine in f:
@@ -39,7 +38,7 @@ def rtl_power_to_json(rtl_power_output):
             row_timestamp = parse_date_time(row_date, row_time)
             row_hz_low = int(data[2])
             row_hz_high = int(data[3])
-            row_hz_step = int(data[4])
+            freqStep = int(data[4])
             row_samples = int(data[5])
 
             if lowestFreq == 0 or row_hz_low < lowestFreq:
@@ -62,7 +61,7 @@ def rtl_power_to_json(rtl_power_output):
 
                 results.append({
                     "timestamp": row_timestamp,
-                    "hz": row_hz_low + (i - 6) * row_hz_step,
+                    "hz": row_hz_low + (i - 6) * freqStep,
                     "db": db
                 })
             
@@ -105,12 +104,17 @@ def rtl_power_to_json(rtl_power_output):
                     "bins": []
                 })
                 i += 1
+    
+    # Adjust the time range by the estimated width/duration of the last step
+    dataLength = len(dataOut)
+    endTime += dataOut[dataLength - 1]["bin"] - dataOut[dataLength - 2]["bin"]
 
     return {
         "stats": {
             "freqRange": [lowestFreq, highestFreq],
             "timeRange": [startTime, endTime],
-            "dbRange": [lowestDb, highestDb]
+            "dbRange": [lowestDb, highestDb],
+            "freqStep": freqStep
         },
         "data": dataOut,
         "frequencies": frequencyOut

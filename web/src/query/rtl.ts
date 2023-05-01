@@ -24,6 +24,7 @@ export type RtlStats = {
     freqRange: [number, number];
     timeRange: [Date, Date];
     dbRange: [number, number];
+    freqStep: number;
 }
 
 export type RtlData = {
