@@ -35,3 +35,6 @@
 /web/next-env.d.ts
 
 /server/__pycache__
+
+# Example directory
+example/
