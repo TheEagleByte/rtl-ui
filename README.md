@@ -6,6 +6,7 @@
 - [Yarn](https://yarnpkg.com/) (optional)
 - [Python](https://www.python.org/downloads/)
 - [pip](https://pip.pypa.io/en/stable/installation/)
+- [rtl_power](https://osmocom.org/projects/rtl-sdr/wiki/Rtl-sdr) (needs to be in your PATH)
 
 ### Setup
 
@@ -24,6 +25,16 @@ In the frontend terminal, run the following commands:
 cd web
 yarn install
 ```
+
+### Configuring RTL Power command
+
+Currently, the api is configured to run the following command:
+
+```python
+"rtl_power -f 24M:100M:1M -i 1s -g 50 -1 data/data" + str(dataIndex) + ".csv"
+```
+
+If you want to change it at all, you can do so in the `server/rtl_power_loop.py` file.
 
 ### Running the App
 
