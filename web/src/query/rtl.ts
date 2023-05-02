@@ -41,5 +41,5 @@ const getData = async (): Promise<RtlData> => {
 export const useData = () => useQuery({
     queryKey: ['rtl'],
     queryFn: getData,
-    // refetchInterval: 1000,
+    refetchInterval: 1000 * 3, // 3 seconds
 });

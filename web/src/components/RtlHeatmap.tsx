@@ -11,12 +11,12 @@ import {
 import { scaleLinear, scaleTime } from '@visx/scale';
 import RtlHeatmapChart from './RtlHeatmapChart';
 
-
-const formatTime = (value: any) => timeFormat("%I:%M %p")(new Date(value));
+// HH:MM:SS AM/PM
+const formatTime = (value: any) => timeFormat("%I:%M:%S %p")(new Date(value));
 const formatFrequency = (value: any) => format(".3s")(value) + "Hz";
 
 const background = '#28272c';
-const margin = { top: 60, left: 100, right: 35, bottom: 20 };
+const margin = { top: 60, left: 110, right: 35, bottom: 20 };
 
 export type TooltipProps = {
     width: number;

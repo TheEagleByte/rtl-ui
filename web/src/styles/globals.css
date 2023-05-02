@@ -8,6 +8,10 @@ body,
   height: 100%;
 }
 
+.rtl-container {
+  height: 90%;  
+}
+
 .tooltip {
   z-index: 0;
   position: relative;

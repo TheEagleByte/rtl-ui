@@ -5,7 +5,6 @@ import { AxisTop, AxisLeft, } from '@visx/axis';
 import { interpolateViridis } from 'd3-scale-chromatic';
 import { HeatmapRect } from '@visx/heatmap';
 import { RtlData } from '@/query/rtl';
-import { Typography } from '@mui/material';
 
 const background = '#28272c';
 
@@ -51,10 +50,16 @@ function RtlHeatmapChart({
                     {(heatmap) => heatmap.map((heatmapBins, heatIndex) => {
                         return heatmapBins.map((bin, binIndex) => {
                             const x = xScale(rows[heatIndex].bins[binIndex].bin);
-                            const y = yScale(new Date(rows[heatIndex].bin));
-                            const h = (heatIndex != rows.length - 1 && binIndex < rows[heatIndex + 1].bins.length)
-                                ? yScale(new Date(rows[heatIndex + 1].bin)) - yScale(new Date(rows[heatIndex].bin))
-                                : yScale(new Date(rows[heatIndex].bin)) - yScale(new Date(rows[heatIndex - 1].bin));
+                            const y = rows.length === 1 ? 0 : yScale(new Date(rows[heatIndex].bin));
+                            let h;
+                            if (rows.length === 1) {
+                                h = height - margin.top - margin.bottom;
+                            } else {
+                                h = (heatIndex != rows.length - 1 && binIndex < rows[heatIndex + 1].bins.length)
+                                    ? yScale(new Date(rows[heatIndex + 1].bin)) - yScale(new Date(rows[heatIndex].bin))
+                                    : yScale(new Date(rows[heatIndex].bin)) - yScale(new Date(rows[heatIndex - 1].bin));
+                            }
+
                             const w = xScale(rows[heatIndex].bins[binIndex].bin + stats.freqStep) - xScale(rows[heatIndex].bins[binIndex].bin);
 
                             return (
@@ -80,7 +85,7 @@ function RtlHeatmapChart({
                         fontSize: 12,
                         textAnchor: 'middle'
                     }}
-                    labelOffset={70}
+                    labelOffset={80}
                     tickStroke={"#fff"}
                     tickLabelProps={{
                         fill: "#fff",
