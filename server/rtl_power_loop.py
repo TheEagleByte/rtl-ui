@@ -3,8 +3,9 @@ import os
 
 # Function that runs rtl_power in a loop
 def run_rtl_power():
-    # Clear out the data folder
-    shutil.rmtree("data")
+    # Clear out the data folder if it exists
+    if os.path.exists("data"):
+        shutil.rmtree("data")
     os.mkdir("data")
 
     dataIndex = 0
